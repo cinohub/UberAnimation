@@ -29,7 +29,7 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 public class MarkerAnimation {
-    public static final long TIME_DELAY=1000;
+    public static final long TIME_DELAY=3000;
     private interface LatLngInterpolator {
 
         public static class LinearFixed implements LatLngInterpolator {
@@ -232,7 +232,7 @@ public class MarkerAnimation {
             to = 0;
         }
         ValueAnimator ani = ValueAnimator.ofFloat(new float[]{(float) from, (float) to});
-        ani.setDuration(500);
+        ani.setDuration(TIME_DELAY);
         ani.addUpdateListener(new AnimatorUpdateListener() {
             public void onAnimationUpdate(ValueAnimator animation) {
                 marker.setAlpha(((Float) animation.getAnimatedValue()).floatValue());

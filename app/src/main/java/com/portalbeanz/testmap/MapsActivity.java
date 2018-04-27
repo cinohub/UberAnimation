@@ -1,10 +1,13 @@
 package com.portalbeanz.testmap;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.location.Location;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.app.FragmentActivity;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -24,6 +27,7 @@ import com.google.android.gms.maps.model.MapStyleOptions;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
+import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
@@ -59,19 +63,38 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     LatLng sydney;
     List<LatLng> listRoutes;
     private LatLngBounds.Builder bounds;
-    int index = -1;
     int next = 1;
     private Handler handler = new Handler();
     public final static int CODE_ORGINAL = 1;
     LatLng orgLatlng;
     public final static int CODE_DESTIANTION = 2;
     LatLng desLatlng;
+    SharedPreferences preferences;
+    SharedPreferences.Editor editor;
+    Data dataSave;
+    int[] iconMarker = {R.drawable.ic_car_marker_1 ,
+                        R.drawable.ic_car_marker_2,
+                        R.drawable.ic_car_marker_3 ,
+                        R.drawable.ic_car_marker_4,
+                        R.drawable.ic_car_marker_7 ,
+                        R.drawable.ic_car_marker_9,
+                        R.drawable.ic_car_marker_15,
+                        };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
         ButterKnife.bind(this);
+        preferences = getPreferences(Context.MODE_PRIVATE);
+        editor = preferences.edit();
+        String dataSavestr = preferences.getString("data", "");
+        if (!dataSavestr.isEmpty()) {
+            dataSave = new Gson().fromJson(dataSavestr, Data.class);
+        } else {
+            dataSave = new Data();
+        }
+
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
@@ -79,8 +102,19 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         listRoutes = new ArrayList<>();
     }
 
+    private void reloadData() {
+        if(dataSave.listRoutes.size()<=0) return;
+        for (String json :dataSave.listRoutes) {
+            try {
+                startRoute(parse(new JSONObject(json)));
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+
+        }
+    }
+
     public void openPlaceAutoCompleteView(int code) {
-        mMap.clear();
         try {
             Intent intent =
                     new PlaceAutocomplete.IntentBuilder(PlaceAutocomplete.MODE_FULLSCREEN)
@@ -100,7 +134,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 orgLatlng = place.getLatLng();
                 edtOrginal.setText(place.getAddress());
                 mMap.addMarker(new MarkerOptions().position(orgLatlng));
-             //   getRoute();
+                //   getRoute();
             }
             return;
         }
@@ -110,25 +144,29 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 desLatlng = place.getLatLng();
                 edtDestination.setText(place.getAddress());
                 mMap.addMarker(new MarkerOptions().position(desLatlng));
-             //   getRoute();
+                //   getRoute();
             }
             return;
         }
     }
 
     private void getRoute() {
-        if(orgLatlng == null || desLatlng == null) return;
+        if (orgLatlng == null || desLatlng == null) return;
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl("https://maps.googleapis.com/maps/api/directions/")
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
         GetRoute polyline = retrofit.create(GetRoute.class);
-        polyline.getPolylineData(orgLatlng.latitude+","+orgLatlng.longitude,desLatlng.latitude+","+desLatlng.longitude).enqueue(new Callback<JsonObject>() {
+        polyline.getPolylineData(orgLatlng.latitude + "," + orgLatlng.longitude, desLatlng.latitude + "," + desLatlng.longitude).enqueue(new Callback<JsonObject>() {
             @Override
             public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
                 JsonObject gson = new JsonParser().parse(response.body().toString()).getAsJsonObject();
                 try {
-                    startRoute(  parse(new JSONObject(gson.toString())));
+                    Log.e("Json : ", gson.toString());
+                    dataSave.listRoutes.add(gson.toString());
+                    editor.putString("data", new Gson().toJson(dataSave));
+                    editor.commit();
+                    startRoute(parse(new JSONObject(gson.toString())));
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
@@ -223,7 +261,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     void startRoute(List<List<HashMap<String, String>>> result) {
-        this.listRoutes.clear();
+        List<LatLng> finalRoute = new ArrayList<>();
         ArrayList<LatLng> points = null;
         PolylineOptions lineOptions = null;
 
@@ -246,12 +284,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 points.add(position);
             }
 
-            this.listRoutes.addAll(points);
-            for (LatLng latlng :this.listRoutes) {
-                bounds.include(latlng);
+            finalRoute.addAll(points);
+            for (LatLng latlng : finalRoute) {
+                if(latlng!=null)bounds.include(latlng);
             }
-            mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds.build(), 50));
-            startAnimation();
+            mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds.build(), 10));
+            startAnimation(finalRoute);
         }
 //
 //        lineOptions.width(10);
@@ -281,31 +319,39 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         // Add a marker in Sydney and move the camera
         sydney = new LatLng(21.047296, 105.790183);
         bounds = new LatLngBounds.Builder();
-
-
-
-    }
-    Runnable runnable =new Runnable() {
-        @Override
-        public void run() {
-            if (index < listRoutes.size() - 1) {
-                index++;
-                // next = index +1;
+        new Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                reloadData();
             }
-            updateMarker(marker, listRoutes.get(index));
-            handler.postDelayed(this, MarkerAnimation.TIME_DELAY);
-        }
-    };
-    private void startAnimation() {
-        handler.removeCallbacks(runnable);
-        marker = mMap.addMarker(new MarkerOptions().position(listRoutes.get(0)).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_car_marker_15)));
-        marker.setAnchor(0.5f, 0.5f);
-        marker.setFlat(true);
-        MarkerAnimation.rotateMarker(marker, new Random().nextFloat() * 360.0f);
-        MarkerAnimation.fadeInMarker(this, marker, true);
-        index = -1;
-        handler.postDelayed(runnable,1000);
+        },2000);
+
     }
+
+
+    private void startAnimation(final List<LatLng> listLatlng) {
+
+       final Marker marker1 = mMap.addMarker(new MarkerOptions().position(listLatlng.get(0)).icon(BitmapDescriptorFactory.fromResource(iconMarker[new Random().nextInt(iconMarker.length)])));
+        marker1.setAnchor(0.5f, 0.5f);
+        marker1.setFlat(true);
+        MarkerAnimation.rotateMarker(marker1, new Random().nextFloat() * 360.0f);
+        MarkerAnimation.fadeInMarker(this, marker1, true);
+        final int index = 0;
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+//                if (index < listLatlng.size() - 1) {
+//                    index++;
+//                    // next = index +1;
+//                }
+                if(listLatlng.size()==0) return;
+                updateMarker(marker1, listLatlng.get(index));
+                listLatlng.remove(index);
+                handler.postDelayed(this, MarkerAnimation.TIME_DELAY);
+            }
+        }, 1000);
+    }
+
     public void updateMarker(Marker marker, LatLng newLocaiton) {
         if (marker != null) {
             Location prevLoc = new Location("gps");
@@ -325,12 +371,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @OnClick(R.id.btn)
     public void onViewClicked() {
         if (mMap == null) return;
-       getRoute();
+        getRoute();
     }
+
     @OnClick(R.id.edtDestination)
     public void onViewDesClicked() {
-       openPlaceAutoCompleteView(CODE_DESTIANTION);
+        openPlaceAutoCompleteView(CODE_DESTIANTION);
     }
+
     @OnClick(R.id.edtOrginal)
     public void onViewOriginClicked() {
         openPlaceAutoCompleteView(CODE_ORGINAL);
