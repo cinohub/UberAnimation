@@ -5,4 +5,4 @@ Demo
 
 </p>
 Video demo app
-[![Everything Is AWESOME](https://i.ytimg.com/vi/069C270LSOY/2.jpg)](https://www.youtube.com/watch?v=069C270LSOY?t=35s "Everything Is AWESOME")
+https://www.youtube.com/watch?v=069C270LSOY?t=35s
