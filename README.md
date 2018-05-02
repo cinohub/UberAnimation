@@ -68,7 +68,7 @@ The main idea to animate the marker smoothly is that run handler in loop with th
 
         public static final long TIME_DELAY=1000;
         
-Now is Test with sample app, you can look inside MapsActivity.java for full source code : 
+Now is testing animation with sample app, you can look inside MapsActivity.java for full source code : 
 ```sh
     Runnable runnable =new Runnable() {
         @Override
