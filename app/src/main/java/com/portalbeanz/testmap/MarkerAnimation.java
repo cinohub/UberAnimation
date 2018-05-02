@@ -29,7 +29,7 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 public class MarkerAnimation {
-    public static final long TIME_DELAY=3000;
+    public static final long TIME_DELAY=1000;
     private interface LatLngInterpolator {
 
         public static class LinearFixed implements LatLngInterpolator {

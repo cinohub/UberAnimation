@@ -107,6 +107,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         for (String json :dataSave.listRoutes) {
             try {
                 startRoute(parse(new JSONObject(json)));
+                break;
             } catch (JSONException e) {
                 e.printStackTrace();
             }
@@ -313,9 +314,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
-        mMap.setMapStyle(
-                MapStyleOptions.loadRawResourceStyle(
-                        this, R.raw.style));
+//        mMap.setMapStyle(
+//                MapStyleOptions.loadRawResourceStyle(
+//                        this, R.raw.style));
         // Add a marker in Sydney and move the camera
         sydney = new LatLng(21.047296, 105.790183);
         bounds = new LatLngBounds.Builder();
@@ -362,7 +363,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             newLoc.setLongitude(newLocaiton.longitude);
             MarkerAnimation.animateMarker(newLoc, marker);
             double bearing = MarkerAnimation.getBearing(marker.getPosition(), new LatLng(newLoc.getLatitude(), newLoc.getLongitude()));
+            Log.e("Bearing : " , bearing +"");
+
             if (bearing > 0.0d) {
+//                if(bearing > 90) bearing = 360 -bearing;
                 MarkerAnimation.rotateMarker(marker, (float) bearing);
             }
         }
