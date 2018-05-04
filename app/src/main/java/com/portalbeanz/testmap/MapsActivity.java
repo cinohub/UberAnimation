@@ -8,7 +8,10 @@ import android.support.v4.app.FragmentActivity;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Toast;
 
+import com.amalbit.trail.RouteOverlayView;
+import com.amalbit.trail.TrailSupportMapFragment;
 import com.google.android.gms.common.GooglePlayServicesNotAvailableException;
 import com.google.android.gms.common.GooglePlayServicesRepairableException;
 import com.google.android.gms.location.places.Place;
@@ -66,6 +69,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     LatLng orgLatlng;
     public final static int CODE_DESTIANTION = 2;
     LatLng desLatlng;
+    private TrailSupportMapFragment mapFragment;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -73,7 +77,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         setContentView(R.layout.activity_maps);
         ButterKnife.bind(this);
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
-        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
+        mapFragment = (TrailSupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
         listRoutes = new ArrayList<>();
@@ -221,7 +225,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         return poly;
     }
-
+//    private RouteOverlayView.AnimType getCurrentAnimType() {
+//        if(mSwitchCompat.isChecked()) {
+//            return RouteOverlayView.AnimType.PATH;
+//        } else {
+//            return RouteOverlayView.AnimType.ARC;
+//        }
+//    }
     void startRoute(List<List<HashMap<String, String>>> result) {
         this.listRoutes.clear();
         ArrayList<LatLng> points = null;
@@ -250,7 +260,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             for (LatLng latlng :this.listRoutes) {
                 bounds.include(latlng);
             }
-            mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds.build(), 50));
+          //  mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds.build(), 50));
             startAnimation();
         }
 //
@@ -271,7 +281,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 //
 //        animatePolyLine();
     }
-
+    private void startAnim(List<LatLng> route){
+        if(mMap != null) {
+            mapFragment.setUpPath(route, mMap, RouteOverlayView.AnimType.PATH);
+        } else {
+            Toast.makeText(getApplicationContext(), "Map not ready", Toast.LENGTH_LONG).show();
+        }
+    }
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
@@ -304,6 +320,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         MarkerAnimation.rotateMarker(marker, new Random().nextFloat() * 360.0f);
         MarkerAnimation.fadeInMarker(this, marker, true);
         index = -1;
+        startAnim(listRoutes);
         handler.postDelayed(runnable,1000);
     }
     public void updateMarker(Marker marker, LatLng newLocaiton) {
