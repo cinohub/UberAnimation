@@ -107,7 +107,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         for (String json :dataSave.listRoutes) {
             try {
                 startRoute(parse(new JSONObject(json)));
-                break;
+            //    break;
             } catch (JSONException e) {
                 e.printStackTrace();
             }
